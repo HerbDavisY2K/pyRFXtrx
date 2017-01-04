@@ -1120,7 +1120,7 @@ class Temp(SensorPacket):
             self.type_string = self._UNKNOWN_TYPE.format(self.packettype,
                                                          self.subtype)
 
-            
+
 ###############################################################################
 # Bbq class
 ###############################################################################
@@ -1146,7 +1146,8 @@ class Bbq(SensorPacket):
         super(Bbq, self).__init__()
         self.id1 = None
         self.id2 = None
-        self.id3 = None        
+        self.id3 = None
+        self.id_combined = None
         self.temp1 = None
         self.temp2 = None
         self.battery = None
