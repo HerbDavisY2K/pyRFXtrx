@@ -299,6 +299,7 @@ class SensorEvent(RFXtrxEvent):
     """ Concrete class for sensor events """
 
     def __init__(self, pkt):
+        #  pylint: disable=too-many-branches, too-many-statements
         device = RFXtrxDevice(pkt)
         super(SensorEvent, self).__init__(device)
 
