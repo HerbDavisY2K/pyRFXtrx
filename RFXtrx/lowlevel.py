@@ -57,7 +57,9 @@ def parse(data):
     elif data[1] == 0x20:
         pkt = Security1()
     elif data[1] == 0x50:
-        pkt = Temp()
+        pkt = Security1()
+    elif data[1] == 0x4E:
+        pkt = Bbq()
     elif data[1] == 0x51:
         pkt = Humid()
     elif data[1] == 0x52:
@@ -1118,6 +1120,65 @@ class Temp(SensorPacket):
             self.type_string = self._UNKNOWN_TYPE.format(self.packettype,
                                                          self.subtype)
 
+            
+###############################################################################
+# Bbq class
+###############################################################################
+
+class Bbq(SensorPacket):
+    """
+    Data class for the Temp1 packet type
+    """
+
+    TYPES = {0x01: 'BBQ1 - Maverick ET-732'}
+    """
+    Mapping of numeric subtype values to strings, used in type_string
+    """
+
+    def __str__(self):
+        return ("Temp [subtype={0}, seqnbr={1}, id={2}, temp={3}, " +
+                "battery={4}, rssi={5}]") \
+            .format(self.type_string, self.seqnbr, self.id_string,
+                    self.temp, self.battery, self.rssi)
+
+    def __init__(self):
+        """Constructor"""
+        super(Temp, self).__init__()
+        self.id1 = None
+        self.id2 = None
+        self.id3 = None        
+        self.temp1 = None
+        self.temp2 = None
+        self.battery = None
+
+    def load_receive(self, data):
+        """Load data from a bytearray"""
+        self.data = data
+        self.packetlength = data[0]
+        self.packettype = data[1]
+        self.subtype = data[2]
+        self.seqnbr = data[3]
+        self.id1 = data[4]
+        self.id2 = data[5]
+        self.id3 = data[6]
+        self.id_combined = (self.id1 << 16) + (self.id2 << 8) + self.id3
+        self.temp1 = data[7]
+        self.temp2 = data[9]
+        self.rssi_byte = data[10]
+        self.battery = self.rssi_byte & 0x0f
+        self.rssi = self.rssi_byte >> 4
+        self._set_strings()
+
+    def _set_strings(self):
+        """Translate loaded numeric values into convenience strings"""
+        self.id_string = "{0:06x}:{1}".format(self.id_combined,
+                                              self.packettype)
+        if self.subtype in self.TYPES:
+            self.type_string = self.TYPES[self.subtype]
+        else:
+            # Degrade nicely for yet unknown subtypes
+            self.type_string = self._UNKNOWN_TYPE.format(self.packettype,
+                                                         self.subtype)
 
 ###############################################################################
 # Humid class
