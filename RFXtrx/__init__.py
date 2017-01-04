@@ -310,7 +310,7 @@ class SensorEvent(RFXtrxEvent):
                 or isinstance(pkt, lowlevel.TempHumid) \
                 or isinstance(pkt, lowlevel.TempHumidBaro):
             self.values['Temperature'] = pkt.temp
-        if isinstance(pkt, lowlevel.Bbq)
+        if isinstance(pkt, lowlevel.Bbq):
             self.values['Temperature'] = pkt.temp1
             self.values['Temperature2'] = pkt.temp2
         if isinstance(pkt, lowlevel.Humid) \
