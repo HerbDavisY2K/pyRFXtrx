@@ -168,7 +168,7 @@ class CoreTestCase(TestCase):
         bytes_array = [0x0a, 0x4e, 0x01, 0x06, 0xfc, 0xd8, 0x00, 0x13, 0x00, 0x13, 0x79]
         event = core.transport.parse(bytes_array)
         self.assertEquals(RFXtrx.SensorEvent, type(event))
-        self.assertEquals(event.__str__(),"<class 'RFXtrx.SensorEvent'> device=[<class 'RFXtrx.RFXtrxDevice'> type='Unknown type (0x53/0x01)' id='96:03'] values=[('Barometer', 1030), ('Battery numeric', 9), ('Forecast', 'no forecast available'), ('Forecast numeric', 0), ('Rssi numeric', 7)]")
+        self.assertEquals(event.__str__(),"<class 'RFXtrx.SensorEvent'> device=[<class 'RFXtrx.RFXtrxDevice'> type='BBQ1 - Maverick ET-732' id='fcd800:78'] values=[('Battery numeric', 9), ('Rssi numeric', 7), ('Temperature', 19), ('Temperature2', 19)]")
         
         #baro
         bytes_array = [0x09, 0x53, 0x01, 0x2a, 0x96, 0x03, 0x04, 0x06, 0x00, 0x79]
