@@ -1143,7 +1143,7 @@ class Bbq(SensorPacket):
 
     def __init__(self):
         """Constructor"""
-        super(Temp, self).__init__()
+        super(Bbq, self).__init__()
         self.id1 = None
         self.id2 = None
         self.id3 = None        
