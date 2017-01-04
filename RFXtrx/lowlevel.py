@@ -57,7 +57,7 @@ def parse(data):
     elif data[1] == 0x20:
         pkt = Security1()
     elif data[1] == 0x50:
-        pkt = Security1()
+        pkt = Temp()
     elif data[1] == 0x4E:
         pkt = Bbq()
     elif data[1] == 0x51:
