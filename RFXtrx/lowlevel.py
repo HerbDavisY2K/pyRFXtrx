@@ -1136,10 +1136,10 @@ class Bbq(SensorPacket):
     """
 
     def __str__(self):
-        return ("Temp [subtype={0}, seqnbr={1}, id={2}, temp={3}, " +
-                "battery={4}, rssi={5}]") \
+        return ("Bbq [subtype={0}, seqnbr={1}, id={2}, temp1={3}, " +
+                "temp2={4}, battery={5}, rssi={6}]") \
             .format(self.type_string, self.seqnbr, self.id_string,
-                    self.temp, self.battery, self.rssi)
+                    self.temp1, self.temp2, self.battery, self.rssi)
 
     def __init__(self):
         """Constructor"""
