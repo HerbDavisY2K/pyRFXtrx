@@ -1181,6 +1181,7 @@ class Bbq(SensorPacket):
             self.type_string = self._UNKNOWN_TYPE.format(self.packettype,
                                                          self.subtype)
 
+
 ###############################################################################
 # Humid class
 ###############################################################################
