@@ -3,7 +3,7 @@ from unittest import TestCase
 import RFXtrx
 
 
-class RfyTestCase(TestCase):
+class RollerTrolTestCase(TestCase):
     def test_parse_bytes(self):
 
         rollertrol = RFXtrx.lowlevel.parse(bytearray(b'\x09\x19\x00\x00\x00\x9b\xa8\x01\x01\x00'))
