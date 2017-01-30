@@ -15,6 +15,8 @@ class RollerTrolTestCase(TestCase):
         self.assertEquals(rollertrol.id_string, "009ba8:1")
         self.assertEquals(rollertrol.cmnd, 1)
         self.assertEquals(rollertrol.cmnd_string, "Down")
+        self.assertEquals(rollertrol.rssi_byte, 0)
+        self.assertEquals(rollertrol.rssi, 0)
 
         rollertrol = RFXtrx.lowlevel.RollerTrol()
         rollertrol.set_transmit(0, 0, 0x009ba8, 1, 1)
@@ -26,6 +28,8 @@ class RollerTrolTestCase(TestCase):
         self.assertEquals(rollertrol.id_string, "009ba8:1")
         self.assertEquals(rollertrol.cmnd, 1)
         self.assertEquals(rollertrol.cmnd_string, "Down")
+        self.assertEquals(rollertrol.rssi_byte, 0)
+        self.assertEquals(rollertrol.rssi, 0)
 
         rollertrol = RFXtrx.lowlevel.RollerTrol()
         rollertrol.parse_id(0, "009ba8:2")
