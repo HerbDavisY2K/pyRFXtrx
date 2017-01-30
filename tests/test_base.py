@@ -199,7 +199,7 @@ class CoreTestCase(TestCase):
         bytes_array = bytearray(b'\x09\x19\x00\x00\x00\x9b\xa8\x01\x01\x00')
         event= core.transport.receive(bytes_array)
         self.assertEquals(RFXtrx.ControlEvent, type(event))
-        self.assertEquals(event.__str__(),"<class 'RFXtrx.ControlEvent'> device=[<class 'RFXtrx.RollerTrolDevice'> type='RollerTrol' id='009ba8:1'] values=[('Command', 'Down')]")
+        self.assertEquals(event.__str__(),"<class 'RFXtrx.ControlEvent'> device=[<class 'RFXtrx.RollerTrolDevice'> type='RollerTrol' id='009ba8:1'] values=[('Command', 'Down'), ('Rssi numeric', 0)]")
         event.device.send_open(core.transport)
         event.device.send_close(core.transport)
         event.device.send_stop(core.transport)
