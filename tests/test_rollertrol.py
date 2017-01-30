@@ -36,7 +36,7 @@ class RollerTrolTestCase(TestCase):
         self.assertEqual(rollertrol.unitcode, 2)
         self.assertRaises(ValueError, rollertrol.parse_id, 0, "AA")
 
-        rollertrol = RFXtrx.get_device(0x1A, 0, "009ba8:1")
+        rollertrol = RFXtrx.get_device(0x19, 0, "009ba8:1")
         self.assertEquals(rollertrol.__str__(), "<class 'RFXtrx.RollerTrolDevice'> type='RollerTrol' id='009ba8:1'")
         self.assertEqual(rollertrol.unitcode, 1)
 
