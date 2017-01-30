@@ -7,7 +7,7 @@ class RollerTrolTestCase(TestCase):
     def test_parse_bytes(self):
 
         rollertrol = RFXtrx.lowlevel.parse(bytearray(b'\x09\x19\x00\x00\x00\x9b\xa8\x01\x01\x00'))
-        self.assertEquals(rollertrol.__repr__(), "RollerTrol [subtype=0, seqnbr=0, id=009ba8:1, cmnd=Down]")
+        self.assertEquals(rollertrol.__repr__(), "RollerTrol [subtype=0, seqnbr=0, id=009ba8:1, cmnd=Down, rssi=0]")
         self.assertEquals(rollertrol.packetlength, 9)
         self.assertEquals(rollertrol.subtype, 0)
         self.assertEquals(rollertrol.type_string, "RollerTrol")
@@ -19,8 +19,8 @@ class RollerTrolTestCase(TestCase):
         self.assertEquals(rollertrol.rssi, 0)
 
         rollertrol = RFXtrx.lowlevel.RollerTrol()
-        rollertrol.set_transmit(0, 0, 0x009ba8, 1, 1)
-        self.assertEquals(rollertrol.__repr__(), "RollerTrol [subtype=0, seqnbr=0, id=009ba8:1, cmnd=Down]")
+        rollertrol.set_transmit(0, 0, 0x009ba8, 1, 1, 0)
+        self.assertEquals(rollertrol.__repr__(), "RollerTrol [subtype=0, seqnbr=0, id=009ba8:1, cmnd=Down, rssi=0]")
         self.assertEquals(rollertrol.packetlength, 9)
         self.assertEquals(rollertrol.subtype, 0)
         self.assertEquals(rollertrol.type_string, "RollerTrol")
