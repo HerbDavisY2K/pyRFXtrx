@@ -2282,4 +2282,3 @@ class RollerTrol(Packet):
                 self.cmnd_string = self.COMMANDS[self.cmnd]
             else:
                 self.cmnd_string = self._UNKNOWN_CMND.format(self.cmnd)
-
