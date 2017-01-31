@@ -24,6 +24,7 @@ RFXtrx.
 # pylint: disable=C0302,R0902,R0903,R0911,R0913
 # pylint: disable= too-many-lines, too-many-statements
 
+
 def parse(data):
     # pylint: disable=too-many-branches
     """ Parse a packet from a bytearray """
