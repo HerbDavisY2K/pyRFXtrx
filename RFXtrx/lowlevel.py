@@ -1,4 +1,3 @@
-# pylint: disable= too-many-lines
 # This file is part of pyRFXtrx, a Python library to communicate with
 # the RFXtrx family of devices from http://www.rfxcom.com/
 # See https://github.com/Danielhiversen/pyRFXtrx for the latest version.
@@ -23,7 +22,7 @@ This module provides low level packet parsing and generation code for the
 RFXtrx.
 """
 # pylint: disable=C0302,R0902,R0903,R0911,R0913
-
+# pylint: disable= too-many-lines, too-many-statements
 
 def parse(data):
     # pylint: disable=too-many-branches
