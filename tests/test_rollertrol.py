@@ -19,7 +19,7 @@ class RollerTrolTestCase(TestCase):
         self.assertEquals(rollertrol.rssi, 0)
 
         rollertrol = RFXtrx.lowlevel.RollerTrol()
-        rollertrol.set_transmit(0, 0, 0x009ba8, 1, 1, 0)
+        rollertrol.set_transmit(0, 0, 0x009ba8, 1, 1)
         self.assertEquals(rollertrol.__repr__(), "RollerTrol [subtype=0, seqnbr=0, id=009ba8:1, cmnd=Down, rssi=0]")
         self.assertEquals(rollertrol.packetlength, 9)
         self.assertEquals(rollertrol.subtype, 0)
