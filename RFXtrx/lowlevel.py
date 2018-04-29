@@ -2503,11 +2503,7 @@ class RollerTrol(Packet):
             self.id3 = self.id_combined & 0xff
             self.unitcode = int(id_string[7:])
             self._set_strings()
-<<<<<<< HEAD
         except ValueError:
-=======
-        except:
->>>>>>> master
             raise ValueError("Invalid id_string")
         if self.id_string != id_string:
             raise ValueError("Invalid id_string")
