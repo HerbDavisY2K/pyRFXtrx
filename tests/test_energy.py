@@ -13,7 +13,7 @@ class Elec1TestCase(TestCase):
 
         energy = RFXtrx.lowlevel.parse(self.data)
         print(energy)
-        self.assertEquals(energy.type_string,"ELEC1")
+        self.assertEquals(energy.type_string,"ELEC1, Electrisave")
         self.assertEquals(energy.seqnbr,167)
         self.assertEquals(energy.id_string,"56:00")
         self.assertEquals(energy.count,10)
@@ -34,7 +34,7 @@ class Elec2TestCase(TestCase):
     def test_parse_bytes(self):
 
         energy = RFXtrx.lowlevel.parse(self.data)
-        self.assertEquals(energy.type_string,"CM119/160")
+        self.assertEquals(energy.type_string,"ELEC2, CM119/160")
         self.assertEquals(energy.seqnbr,0)
         self.assertEquals(energy.id_string,"2e:b2")
         self.assertEquals(energy.count,3)
@@ -58,7 +58,7 @@ class Elec4TestCase(TestCase):
     def test_parse_bytes(self):
 
         energy = RFXtrx.lowlevel.parse(self.data)
-        self.assertEquals(energy.type_string,"CM180i")
+        self.assertEquals(energy.type_string,"ELEC4, CM180i")
         self.assertEquals(energy.seqnbr,4)
         self.assertEquals(energy.id_string,"2e:b2")
         self.assertEquals(energy.count,1)
@@ -66,3 +66,32 @@ class Elec4TestCase(TestCase):
         self.assertEquals(energy.currentamps2,514.1)
         self.assertEquals(energy.currentamps3,591.2)
         self.assertEquals(energy.totalwatthours,113527617921.3023)
+
+class Elec5TestCase(TestCase):
+
+    def setUp(self):
+
+        self.data = bytearray(b'\x0f\x5c\x01\x05'
+                              b'\x23\x95'
+                              b'\xb2'
+                              b'\x04\x48'
+                              b'\x20\xce'
+                              b'\x00\x76'
+                              b'\x00'
+                              b'\x32'
+                              b'\x80')
+        self.parser = RFXtrx.lowlevel.Energy5()
+
+    def test_parse_bytes(self):
+
+        energy = RFXtrx.lowlevel.parse(self.data)
+        self.assertEquals(energy.type_string,"ELEC5, Revolt")
+        self.assertEquals(energy.seqnbr,5)
+        self.assertEquals(energy.id_string,"23:95")
+        self.assertEquals(energy.voltage,178)
+        self.assertEquals(energy.currentamps,10.96)
+        self.assertEquals(energy.currentwatt,839.8)
+        self.assertEquals(energy.totalwatthours,1180)
+        self.assertEquals(energy.powerfactor,0)
+        self.assertEquals(energy.frequency,50)
+        

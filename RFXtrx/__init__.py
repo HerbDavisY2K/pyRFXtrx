@@ -20,7 +20,7 @@
 """
 This module provides the base implementation for pyRFXtrx
 """
-# pylint: disable=R0903
+# pylint: disable=R0903, invalid-name
 from __future__ import print_function
 
 from time import sleep
@@ -32,7 +32,6 @@ from . import lowlevel
 ###############################################################################
 # RFXtrxDevice class
 ###############################################################################
-
 
 class RFXtrxDevice(object):
     """ Superclass for all devices """
@@ -164,6 +163,7 @@ class RfyDevice(RFXtrxDevice):
 class LightingDevice(RFXtrxDevice):
     """ Concrete class for a control device """
 
+    # pylint: disable=too-many-instance-attributes
     def __init__(self, pkt):
         super(LightingDevice, self).__init__(pkt)
         if isinstance(pkt, lowlevel.Lighting1):
@@ -175,6 +175,9 @@ class LightingDevice(RFXtrxDevice):
         if isinstance(pkt, lowlevel.Lighting3):
             self.system = pkt.system
             self.channel = pkt.channel
+        if isinstance(pkt, lowlevel.Lighting4):
+            self.cmd = pkt.cmd
+            self.pulse = pkt.pulse
         if isinstance(pkt, lowlevel.Lighting5):
             self.id_combined = pkt.id_combined
             self.unitcode = pkt.unitcode
@@ -200,6 +203,12 @@ class LightingDevice(RFXtrxDevice):
             pkt = lowlevel.Lighting3()
             pkt.set_transmit(self.subtype, 0, self.system, self.channel,
                              turn_on and 0x10 or 0x1a)
+            transport.send(pkt.data)
+        elif self.packettype == 0x13:  # Lighting4
+            pkt = lowlevel.Lighting4()
+            code = self.cmd & ~1
+            code |= 0x1 if turn_on else 0x0
+            pkt.set_transmit(self.subtype, 0, code, self.pulse)
             transport.send(pkt.data)
         elif self.packettype == 0x14:  # Lighting5
             pkt = lowlevel.Lighting5()
@@ -253,6 +262,7 @@ class LightingDevice(RFXtrxDevice):
         """ Send a 'Dim' command with the given level using the given
             transport
         """
+        #  pylint: disable=too-many-branches
         if level < 0 or level > 100:
             raise ValueError("Dim level must be between 0 and 100")
 
@@ -270,11 +280,15 @@ class LightingDevice(RFXtrxDevice):
                                  ((level + 6) * 16 // 100) - 1)
                 transport.send(pkt.data)
         elif self.packettype == 0x12:  # Lighting3
-            raise ValueError("Dim level unsupported for Lighting3")
-            # Should not be too hard to add dim level support for Lighting3
-            # (Ikea Koppla) due to the availability of the level 1 .. level 9
-            # commands. I just need someone to help me with defining a mapping
-            # between a percentage and a level
+            if level == 0:
+                self.send_off(transport)
+            elif level == 100:
+                self.send_on(transport)
+            else:
+                pkt = lowlevel.Lighting3()
+                pkt.set_transmit(self.subtype, 0, self.system, self.channel,
+                                 (level * 9 // 100) + 17)
+                transport.send(pkt.data)
         elif self.packettype == 0x14:  # Lighting5
             if level == 0:
                 self.send_off(transport)
@@ -361,26 +375,25 @@ class SensorEvent(RFXtrxEvent):
         self.pkt = pkt
         if isinstance(pkt, lowlevel.RfxMeter):
             self.values['Counter value'] = pkt.value
-        if isinstance(pkt, lowlevel.Temp) \
-                or isinstance(pkt, lowlevel.TempHumid) \
-                or isinstance(pkt, lowlevel.TempHumidBaro):
+        if isinstance(pkt, (lowlevel.Temp, lowlevel.TempHumid,
+                            lowlevel.TempHumidBaro, lowlevel.TempRain)):
             self.values['Temperature'] = pkt.temp
         if isinstance(pkt, lowlevel.Bbq):
             self.values['Temperature'] = pkt.temp1
             self.values['Temperature2'] = pkt.temp2
-        if isinstance(pkt, lowlevel.Humid) \
-                or isinstance(pkt, lowlevel.TempHumid) \
-                or isinstance(pkt, lowlevel.TempHumidBaro):
+        if isinstance(pkt, (lowlevel.Humid, lowlevel.TempHumid,
+                            lowlevel.TempHumidBaro)):
             self.values['Humidity'] = pkt.humidity
             self.values['Humidity status'] = pkt.humidity_status_string
             self.values['Humidity status numeric'] = pkt.humidity_status
-        if isinstance(pkt, lowlevel.Baro) \
-                or isinstance(pkt, lowlevel.TempHumidBaro):
+        if isinstance(pkt, (lowlevel.Baro, lowlevel.TempHumidBaro)):
             self.values['Barometer'] = pkt.baro
             self.values['Forecast'] = pkt.forecast_string
             self.values['Forecast numeric'] = pkt.forecast
         if isinstance(pkt, lowlevel.Rain):
             self.values['Rain rate'] = pkt.rainrate
+            self.values['Rain total'] = pkt.raintotal
+        if isinstance(pkt, lowlevel.TempRain):
             self.values['Rain total'] = pkt.raintotal
         if isinstance(pkt, lowlevel.Wind):
             self.values['Wind direction'] = pkt.direction
@@ -388,6 +401,8 @@ class SensorEvent(RFXtrxEvent):
             self.values['Wind gust'] = pkt.gust
             self.values['Temperature'] = pkt.temperature
             self.values['Chill'] = pkt.chill
+        if isinstance(pkt, lowlevel.UV):
+            self.values['UV'] = pkt.uvi
         if isinstance(pkt, lowlevel.Energy):
             self.values['Energy usage'] = pkt.currentwatt
             self.values['Total usage'] = pkt.totalwatts
@@ -407,11 +422,16 @@ class SensorEvent(RFXtrxEvent):
             self.values['Current Ch. 3'] = pkt.currentamps3
             self.values['Total usage'] = pkt.totalwatthours
             self.values['Count'] = pkt.count
+        if isinstance(pkt, lowlevel.Energy5):
+            self.values['Voltage'] = pkt.voltage
+            self.values['Current'] = pkt.currentamps
+            self.values['Energy usage'] = pkt.currentwatt
+            self.values['Total usage'] = pkt.totalwatthours
         if isinstance(pkt, lowlevel.Chime):
             self.values['Sound'] = pkt.sound
         if isinstance(pkt, lowlevel.Security1):
             self.values['Sensor Status'] = pkt.security1_status_string
-        if not isinstance(pkt, lowlevel.RfxMeter):
+        if not isinstance(pkt, (lowlevel.Energy5, lowlevel.RfxMeter)):
             self.values['Battery numeric'] = pkt.battery
         self.values['Rssi numeric'] = pkt.rssi
 
@@ -429,12 +449,9 @@ class ControlEvent(RFXtrxEvent):
 
     def __init__(self, pkt):
         # pylint: disable=too-many-boolean-expressions
-        if isinstance(pkt, lowlevel.Lighting1) \
-                or isinstance(pkt, lowlevel.Lighting2) \
-                or isinstance(pkt, lowlevel.Lighting3) \
-                or isinstance(pkt, lowlevel.Lighting4) \
-                or isinstance(pkt, lowlevel.Lighting5) \
-                or isinstance(pkt, lowlevel.Lighting6):
+        if isinstance(pkt, (lowlevel.Lighting1, lowlevel.Lighting2,
+                            lowlevel.Lighting3, lowlevel.Lighting4,
+                            lowlevel.Lighting5, lowlevel.Lighting6)):
             device = LightingDevice(pkt)
         elif isinstance(pkt, lowlevel.RollerTrol):
             device = RollerTrolDevice(pkt)
@@ -474,10 +491,6 @@ class ControlEvent(RFXtrxEvent):
 
 class StatusEvent(RFXtrxEvent):
     """ Concrete class for status """
-
-    def __init__(self, pkt):
-        super(StatusEvent, self).__init__(pkt)
-
     def __str__(self):
         return "{0} device=[{1}]".format(
             type(self), self.device)
@@ -493,17 +506,25 @@ class _dummySerial(object):
     def __init__(self, *args, **kwargs):
         self._read_num = 0
         self._data = {}
-        self._data[0] = [0x0b, 0x15, 0x00, 0x2a, 0x12,
+        self._data[0] = [0x0D, 0x01, 0x00, 0x01, 0x02, 0x53, 0x45,  # status
+                         0x10,  # msg3: rsl
+                         0x0C,  # msg4: hideki lacrosse
+                         0x2F,  # msg5: x10 arc ac homeeasy oregon
+                         0x01,  # msg6: keeloq
+                         0x01, 0x00, 0x00]
+        self._data[1] = [0x00, 0x00, 0x00, 0x00, 0x00,  # response to start
+                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00]
+        self._data[2] = [0x0b, 0x15, 0x00, 0x2a, 0x12,
                          0x34, 0x41, 0x05, 0x03, 0x01, 0x00, 0x70]  # light
-        self._data[1] = [0x0b, 0x15, 0x00, 0x2a, 0x12,
-                         0x34, 0x41, 0x05, 0x03, 0x01, 0x00, 0x70]  # light
-        self._data[2] = [0x0a, 0x51, 0x01, 0x00, 0x00,
-                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00]  # sensor1
         self._data[3] = [0x0b, 0x15, 0x00, 0x2a, 0x12,
                          0x34, 0x41, 0x05, 0x03, 0x01, 0x00, 0x70]  # light
         self._data[4] = [0x0a, 0x51, 0x01, 0x00, 0x00,
                          0x00, 0x00, 0x00, 0x00, 0x00, 0x00]  # sensor1
-        self._data[5] = [0x0a, 0x20, 0x00, 0x00, 0x00,
+        self._data[5] = [0x0b, 0x15, 0x00, 0x2a, 0x12,
+                         0x34, 0x41, 0x05, 0x03, 0x01, 0x00, 0x70]  # light
+        self._data[6] = [0x0a, 0x51, 0x01, 0x00, 0x00,
+                         0x00, 0x00, 0x00, 0x00, 0x00, 0x00]  # sensor1
+        self._data[7] = [0x0a, 0x20, 0x00, 0x00, 0x00,
                          0x00, 0x00, 0x00, 0x00, 0x00, 0x00]  # sensor2
 
     def write(self, *args, **kwargs):
@@ -553,6 +574,7 @@ class RFXtrxTransport(object):
             # Store the latest RF signal data
             obj.data = data
             return obj
+        return None
 
     def reset(self):
         """ reset the rfxtrx device """
@@ -572,43 +594,57 @@ class PySerialTransport(RFXtrxTransport):
 
     def __init__(self, port, debug=False):
         self.debug = debug
+        self.port = port
+        self.serial = None
         self._run_event = threading.Event()
         self._run_event.set()
+        self.connect()
+
+    def connect(self):
+        """ Open a serial connexion """
         try:
-            self.serial = serial.Serial(port, 38400, timeout=0.1)
+            self.serial = serial.Serial(self.port, 38400, timeout=0.1)
         except serial.serialutil.SerialException:
             import glob
-            try:
-                port = glob.glob('/dev/serial/by-id/usb-RFXCOM_*-port0')[0]
-                self.serial = serial.Serial(port, 38400, timeout=0.1)
-            except:
-                raise serial.serialutil.SerialException()
+            port = glob.glob('/dev/serial/by-id/usb-RFXCOM_*-port0')[0]
+            self.serial = serial.Serial(port, 38400, timeout=0.1)
 
     def receive_blocking(self):
         """ Wait until a packet is received and return with an RFXtrxEvent """
+        data = None
         while self._run_event.is_set():
-            data = self.serial.read()
-            if len(data) > 0:
-                if data == '\x00':
+            try:
+                data = self.serial.read()
+            except TypeError:
+                continue
+            except serial.serialutil.SerialException:
+                import time
+                try:
+                    self.connect()
+                except serial.serialutil.SerialException:
+                    time.sleep(5)
                     continue
-                pkt = bytearray(data)
-                data = self.serial.read(pkt[0])
-                pkt.extend(bytearray(data))
-                if self.debug:
-                    print("Recv: " + " ".join("0x{0:02x}".format(x)
-                                              for x in pkt))
-                return self.parse(pkt)
+            if not data or data == '\x00':
+                continue
+            pkt = bytearray(data)
+            data = self.serial.read(pkt[0])
+            pkt.extend(bytearray(data))
+            if self.debug:
+                print("RFXTRX: Recv: " +
+                      " ".join("0x{0:02x}".format(x) for x in pkt))
+            return self.parse(pkt)
 
     def send(self, data):
         """ Send the given packet """
         if isinstance(data, bytearray):
             pkt = data
-        elif isinstance(data, str) or isinstance(data, bytes):
+        elif isinstance(data, (bytes, str)):
             pkt = bytearray(data)
         else:
             raise ValueError("Invalid type")
         if self.debug:
-            print("Send: " + " ".join("0x{0:02x}".format(x) for x in pkt))
+            print("RFXTRX: Send: " +
+                  " ".join("0x{0:02x}".format(x) for x in pkt))
         self.serial.write(pkt)
 
     def reset(self):
@@ -616,8 +652,6 @@ class PySerialTransport(RFXtrxTransport):
         self.send(b'\x0D\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00')
         sleep(0.3)  # Should work with 0.05, but not for me
         self.serial.flushInput()
-        self.send(b'\x0D\x00\x00\x01\x02\x00\x00\x00\x00\x00\x00\x00\x00\x00')
-        return self.receive_blocking()
 
     def close(self):
         """ close connection to rfxtrx device """
@@ -638,7 +672,8 @@ class DummyTransport(RFXtrxTransport):
             return None
         pkt = bytearray(data)
         if self.debug:
-            print("Recv: " + " ".join("0x{0:02x}".format(x) for x in pkt))
+            print("RFXTRX: Recv: " +
+                  " ".join("0x{0:02x}".format(x) for x in pkt))
         return self.parse(pkt)
 
     def receive_blocking(self, data=None):
@@ -650,7 +685,8 @@ class DummyTransport(RFXtrxTransport):
             requested) """
         pkt = bytearray(data)
         if self.debug:
-            print("Send: " + " ".join("0x{0:02x}".format(x) for x in pkt))
+            print("RFXTRX: Send: " +
+                  " ".join("0x{0:02x}".format(x) for x in pkt))
 
 
 class DummyTransport2(PySerialTransport):
@@ -667,13 +703,17 @@ class Connect(object):
     """ The main class for rfxcom-py.
     Has methods for sensors.
     """
-    #  pylint: disable=too-many-instance-attributes
+    #  pylint: disable=too-many-instance-attributes, too-many-arguments
     def __init__(self, device, event_callback=None, debug=False,
-                 transport_protocol=PySerialTransport):
+                 transport_protocol=PySerialTransport,
+                 modes=None):
         self._run_event = threading.Event()
         self._run_event.set()
         self._sensors = {}
-        self._event_callback = event_callback
+        self._status = None
+        self._modes = modes
+        self._debug = debug
+        self.event_callback = event_callback
 
         self.transport = transport_protocol(device, debug)
         self._thread = threading.Thread(target=self._connect)
@@ -683,11 +723,22 @@ class Connect(object):
     def _connect(self):
         """Connect """
         self.transport.reset()
+        self._status = self.send_get_status()
+
+        if self._modes is not None:
+            self.set_recmodes(self._modes)
+            self._status = self.send_get_status()
+
+        if self._debug:
+            print("RFXTRX: ", self._status.device)
+
+        self.send_start()
+
         while self._run_event.is_set():
             event = self.transport.receive_blocking()
             if isinstance(event, RFXtrxEvent):
-                if self._event_callback:
-                    self._event_callback(event)
+                if self.event_callback:
+                    self.event_callback(event)
                 if isinstance(event, SensorEvent):
                     self._sensors[event.device.id_string] = event.device
 
@@ -702,6 +753,39 @@ class Connect(object):
         self._run_event.clear()
         self.transport.close()
         self._thread.join()
+
+    def set_recmodes(self, modenames):
+        """ Sets the device modes (which protocols to decode) """
+        data = bytearray([0x0D, 0x00, 0x00, 0x00, 0x03, 0x00, 0x00,
+                          0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00])
+
+        # Keep the values read during init.
+        data[5] = self._status.device.tranceiver_type
+        data[6] = self._status.device.output_power
+
+        # Build the mode data bytes from the mode names
+        for mode in modenames:
+            byteno, bitno = lowlevel.get_recmode_tuple(mode)
+            if byteno is None:
+                raise ValueError('Unknown mode name '+mode)
+
+            data[7 + byteno] |= 1 << bitno
+
+        self.transport.send(data)
+        self._modes = modenames
+        return self.transport.receive_blocking()
+
+    def send_start(self):
+        """ Sends the Start RFXtrx transceiver command """
+        self.transport.send(b'\x0D\x00\x00\x03\x07\x00\x00'
+                            b'\x00\x00\x00\x00\x00\x00\x00')
+        return self.transport.receive_blocking()
+
+    def send_get_status(self):
+        """ Sends the Get Status command """
+        self.transport.send(b'\x0D\x00\x00\x01\x02\x00\x00'
+                            b'\x00\x00\x00\x00\x00\x00\x00')
+        return self.transport.receive_blocking()
 
 
 class Core(Connect):

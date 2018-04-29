@@ -56,7 +56,10 @@ class CoreTestCase(TestCase):
         event = core.transport.parse(bytes_array)
         event.device.send_on(core.transport)
         event.device.send_off(core.transport)
-        self.assertRaises(ValueError,event.device.send_dim,core.transport,50)
+        self.assertRaises(ValueError,event.device.send_dim,core.transport,150)
+        self.assertRaises(ValueError,event.device.send_dim,core.transport,-1)
+        event.device.send_dim(core.transport,50)
+        event.device.send_dim(core.transport,0)
 
         # Lighting4
         bytes_array = [0x09, 0x13, 0x00, 0x2a, 0x12, 0x34, 0x56, 0x01, 0x5e, 0x70]
@@ -182,11 +185,17 @@ class CoreTestCase(TestCase):
         self.assertEquals(RFXtrx.SensorEvent, type(event))
         self.assertEquals(event.__str__(),"<class 'RFXtrx.SensorEvent'> device=[<class 'RFXtrx.RFXtrxDevice'> type='WTGR800' id='2f:00'] values=[('Battery numeric', 9), ('Chill', -59.2), ('Rssi numeric', 5), ('Temperature', -35.2), ('Wind average speed', 3.2), ('Wind direction', 247), ('Wind gust', 3.6)]")
 
+        #uv
+        bytes_array = [0x09, 0x57, 0x02, 0x02, 0x64, 0x00, 0x20, 0x02, 0x3c, 0x69]
+        event = core.transport.parse(bytes_array)
+        self.assertEquals(RFXtrx.SensorEvent, type(event))
+        self.assertEquals(event.__str__(),"<class 'RFXtrx.SensorEvent'> device=[<class 'RFXtrx.RFXtrxDevice'> type='UVN800' id='64:00'] values=[('Battery numeric', 9), ('Rssi numeric', 6), ('UV', 3.2)]")
+
         #Elec4
         bytes_array = [0x13, 0x5b, 0x01, 0x04, 0x2e, 0xB2, 0x01, 0x11, 0x12, 0x14, 0x15, 0x17, 0x18, 0x17, 0x18, 0x19, 0x20, 0x21, 0x22, 0x69]
         event = core.transport.parse(bytes_array)
         self.assertEquals(RFXtrx.SensorEvent, type(event))
-        self.assertEquals(event.__str__(),"<class 'RFXtrx.SensorEvent'> device=[<class 'RFXtrx.RFXtrxDevice'> type='CM180i' id='2e:b2'] values=[('Battery numeric', 9), ('Count', 1), ('Current Ch. 1', 437.0), ('Current Ch. 2', 514.1), ('Current Ch. 3', 591.2), ('Rssi numeric', 6), ('Total usage', 113527617921.3023)]")
+        self.assertEquals(event.__str__(),"<class 'RFXtrx.SensorEvent'> device=[<class 'RFXtrx.RFXtrxDevice'> type='ELEC4, CM180i' id='2e:b2'] values=[('Battery numeric', 9), ('Count', 1), ('Current Ch. 1', 437.0), ('Current Ch. 2', 514.1), ('Current Ch. 3', 591.2), ('Rssi numeric', 6), ('Total usage', 113527617921.3023)]")
 
         #Lighting5
         bytes_array = bytearray(b'\x0A\x14\x00\xAD\xF3\x94\xAB'
@@ -255,7 +264,7 @@ class CoreTestCase(TestCase):
         event = core.transport.parse(bytes_array)
         self.assertEquals(RFXtrx.SensorEvent, type(event))
         self.assertEqual(event.device.subtype, 0x00)
-        self.assertEqual(event.device.type_string, 'RFXMeter Data Packet')
+        self.assertEqual(event.device.type_string, 'RFXMeter Count')
         self.assertEqual(event.device.id_string, '21')
         self.assertEquals(event.values['Counter value'], 2105252)
 
@@ -263,6 +272,13 @@ class CoreTestCase(TestCase):
         bytes_array = [0x10, 0x54, 0x01, 0x03, 0x2F, 0x00, 0x00, 0xF7, 0x00, 0x20, 0x00, 0x24, 0x81, 0x60, 0x82, 0x50]
         event = core.transport.parse(bytes_array)
         self.assertEquals(None, event)
+
+        #temprain
+        bytes_array = [0x0a, 0x4f, 0x01, 0x06, 0xee, 0x09, 0x00, 0x65, 0x00, 0x03, 0x69]
+        event = core.transport.parse(bytes_array)
+        self.assertEquals(RFXtrx.SensorEvent, type(event))
+        self.assertEquals(event.__str__(),"<class 'RFXtrx.SensorEvent'> device=[<class 'RFXtrx.RFXtrxDevice'> type='TR1 - WS1200' id='ee:09'] values=[('Battery numeric', 9), ('Rain total', 0.3), ('Rssi numeric', 6), ('Temperature', 10.1)]")
+       
 
         core.close_connection()
 
@@ -279,7 +295,7 @@ class CoreTestCase(TestCase):
         light2 = RFXtrx.lowlevel.parse(data2)
 
         data3 = bytearray(b'\x0A\x52\x02\x11\x70\x02\x00\xA7'
-                         b'\x2D\x00\x89')
+                          b'\x2D\x00\x89')
         temphum = RFXtrx.lowlevel.parse(data3)
 
         self.assertTrue(light==light2)
@@ -339,6 +355,12 @@ class CoreTestCase(TestCase):
         device = RFXtrx.get_device(event.device.packettype, event.device.subtype, event.device.id_string)
         self.assertTrue(device==event.device)
 
+        # Lighting4
+        bytes_array = [0x09, 0x13, 0x00, 0x2a, 0x12, 0x34, 0x56, 0x01, 0x5e, 0x70]
+        event = core.transport.parse(bytes_array)
+        device = RFXtrx.get_device(event.device.packettype, event.device.subtype, event.device.id_string)
+        self.assertTrue(device==event.device)
+
         # Lighting5
         bytes_array = bytearray(b'\x0A\x14\x00\xAD\xF3\x94\xAB'
                               b'\x01\x01\x00\x60')
@@ -359,6 +381,27 @@ class CoreTestCase(TestCase):
         self.assertRaises(ValueError, RFXtrx.get_device,event.device.packettype, event.device.subtype, event.device.id_string)
         core.close_connection()
 
+    def test_set_recmodes(self):
+        core = RFXtrx.Connect(self.path, event_callback=_callback, debug=False, 
+                              transport_protocol=RFXtrx.DummyTransport)
+        self.assertEquals(None, core._modes)
+
+        modes = ['ac', 'arc', 'hideki', 'homeeasy', 'keeloq', 'lacrosse', 'oregon', 'rsl', 'x10']
+        bytes_array = bytearray(b'\x0D\x01\x00\x01\x02\x53\x45'
+                          b'\x10' # msg3: rsl
+                          b'\x0C' # msg4: hideki lacrosse
+                          b'\x2F' # msg5: x10 arc ac homeeasy oregon
+                          b'\x01' # msg6: keeloq
+                          b'\x01\x00\x00' # unused
+                         )
+        core._status = core.transport.receive(bytes_array)
+        core.set_recmodes(modes)
+        self.assertEquals(modes, core._modes)
+
+        # set an unknown mode
+        with self.assertRaises(ValueError):
+          core.set_recmodes(['arc', 'oregon', 'unknown-mode'])
+
     def test_receive(self):
         core = RFXtrx.Connect(self.path, event_callback=_callback, debug=False, transport_protocol=RFXtrx.DummyTransport)
         # Lighting1
@@ -369,9 +412,14 @@ class CoreTestCase(TestCase):
         self.assertEquals(event.__str__(),"<class 'RFXtrx.ControlEvent'> device=[<class 'RFXtrx.LightingDevice'> type='X10 lighting' id='E5'] values=[('Command', 'On'), ('Rssi numeric', 7)]")
 
         #status
-        bytes_array = bytearray(b'\x0D\x01\x00\x01\x02\x53\x45\x00\x0C'
-                                b'\x2F\x01\x01\x00\x00')
+        bytes_array = bytearray(b'\x0D\x01\x00\x01\x02\x53\x45'
+                                b'\x10' # msg3: rsl
+                                b'\x0C' # msg4: hideki lacrosse
+                                b'\x2F' # msg5: x10 arc ac homeeasy oregon
+                                b'\x01' # msg6: keeloq
+                                b'\x01\x00\x00' # unused
+                               )
         event= core.transport.receive(bytes_array)
         self.assertEquals(RFXtrx.StatusEvent, type(event))
-        self.assertEquals(event.__str__(),"<class 'RFXtrx.StatusEvent'> device=[Status [subtype=433.92MHz, firmware=69, devices=['ac', 'arc', 'hideki', 'homeeasy', 'lacrosse', 'oregon', 'x10']]]")
+        self.assertEquals(event.__str__(),"<class 'RFXtrx.StatusEvent'> device=[Status [subtype=433.92MHz, firmware=69, output_power=0, devices=['ac', 'arc', 'hideki', 'homeeasy', 'keeloq', 'lacrosse', 'oregon', 'rsl', 'x10']]]")
         core.close_connection()
